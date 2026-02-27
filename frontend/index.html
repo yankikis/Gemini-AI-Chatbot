@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My AI assistant</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        #chat-container { width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; }
+        #chat-box { height: 400px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-color: #e5ddd5; }
+        .message { padding: 10px 15px; border-radius: 15px; max-width: 80%; word-wrap: break-word; }
+        .user-message { background-color: #dcf8c6; align-self: flex-end; }
+        .bot-message { background-color: white; align-self: flex-start; }
+        #input-area { display: flex; padding: 10px; background: #f0f0f0; }
+        #user-input { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none; }
+        #send-btn { background-color: #007bff; color: white; border: none; padding: 10px 20px; margin-left: 10px; border-radius: 20px; cursor: pointer; }
+        #send-btn:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+
+    <div id="chat-container">
+        <div id="chat-box">
+            <div class="message bot-message">Merhaba! Ben senin yapay zeka asistanınım. Sana nasıl yardımcı olabilirim?</div>
+        </div>
+        <div id="input-area">
+            <input type="text" id="user-input" placeholder="Bir mesaj yazın..." onkeypress="handleKeyPress(event)">
+            <button id="send-btn" onclick="sendMessage()">Gönder</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const inputField = document.getElementById("user-input");
+            const message = inputField.value.trim();
+            if (!message) return; 
+
+            const chatBox = document.getElementById("chat-box");
+
+            chatBox.innerHTML += `<div class="message user-message">${message}</div>`;
+            inputField.value = ""; 
+            chatBox.scrollTop = chatBox.scrollHeight; 
+
+            const loadingId = "loading-" + Date.now();
+            chatBox.innerHTML += `<div id="${loadingId}" class="message bot-message"><i>Yazıyor...</i></div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: message })
+                });
+
+                const data = await response.json();
+                
+                document.getElementById(loadingId).remove();
+                
+                if(data.reply) {
+                    chatBox.innerHTML += `<div class="message bot-message">${data.reply}</div>`;
+                } else {
+                    chatBox.innerHTML += `<div class="message bot-message" style="color:red;">Hata: ${data.error}</div>`;
+                }
+                
+            } catch (error) {
+                document.getElementById(loadingId).remove();
+                chatBox.innerHTML += `<div class="message bot-message" style="color:red;">Sunucuya bağlanılamadı. Backend çalışıyor mu?</div>`;
+            }
+            
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html>

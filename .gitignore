@@ -1,0 +1,9 @@
+# Gemini API Key
+.env
+
+# Libraries
+venv/
+backend/venv/
+
+# Python geçici dosyalar
+__pycache__/
