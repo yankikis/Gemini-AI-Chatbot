@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 import os
 from dotenv import load_dotenv
+from fastapi.responses import StreamingResponse 
 
 
 load_dotenv()
@@ -22,17 +23,23 @@ app.add_middleware(
 )
 
 class ChatRequest(BaseModel):
-    message: str
+    history: list
 
 
 @app.post("/chat")
 async def chat_with_gemini(request: ChatRequest):
     try:
-        response = client.models.generate_content(
-            model='gemini-3-flash-preview', 
-            contents=request.message
-            )
+        response_stream = client.models.generate_content_stream(
+            model='gemini-3-flash-preview',
+            contents=request.history
+        )
 
-        return {"reply": response.text}
+        def generate():
+            for chunk in response_stream:
+                if chunk.text:
+                    yield chunk.text
+
+        return StreamingResponse(generate(), media_type="text/plain")
+    
     except Exception as e:
         return {"error": f"Bir hata oluştu: {str(e)}"}
